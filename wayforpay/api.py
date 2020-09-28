@@ -1,6 +1,6 @@
 import requests
 
-from .constants import API_URL
+from .constants import API_URL, API_VERSION
 from .utils import generate_signature
 
 
@@ -13,6 +13,64 @@ class Api:
     def _query(self, params, url=API_URL):
         response = requests.post(url, json=params)
         return response.json()
+
+    def check_status(self, data):
+        """
+        Запрос Check Status используется для проверки статуса платежа по orderReference
+        :param orderReference:
+        :return:
+        """
+        signature_data = f"{self.merchant_account};{data['orderReference']}"
+        params = {
+            "transactionType": "CHECK_STATUS",
+            "merchantAccount": self.merchant_account,
+            "orderReference": data['orderReference'],
+            "merchantSignature": generate_signature(self.merchant_key, signature_data),
+            "apiVersion": API_VERSION
+        }
+        response = self._query(params)
+        return response
+
+    def refund(self, data):
+        """
+        Запрос Refund используется для проведения возврата средств или отмены платежа.
+        :param data:
+        :return:
+        """
+        signature_data = f"{self.merchant_account};{data['orderReference']};{data['amount']};{data['currency']}"
+        params = {
+            "transactionType": "REFUND",
+            "merchantAccount": self.merchant_account,
+            "orderReference": data['orderReference'],
+            "amount": data['amount'],
+            "currency": data['currency'],
+            "comment": data['comment'],
+            "merchantSignature": generate_signature(self.merchant_key, signature_data),
+            "apiVersion": API_VERSION
+        }
+        response = self._query(params)
+        return response
+
+    def settle(self, data):
+        """
+        Запрос Settle используется для подтверждение списания платежа Auth. Результатом обработки запроса является
+        списание заблокированных ранее денежных средств с карты клиента. Операция доступна для транзакций Purchase и
+        Charge(host-2-host) с типом merchantTr2483ansactionType = AUTH
+        :param data:
+        :return:
+        """
+        signature_data = f"{self.merchant_account};{data['orderReference']};{data['amount']};{data['currency']}"
+        params = {
+            "transactionType": "SETTLE",
+            "merchantAccount": self.merchant_account,
+            "orderReference": data['orderReference'],
+            "amount": data['amount'],
+            "currency": data['currency'],
+            "merchantSignature": generate_signature(self.merchant_key, signature_data),
+            "apiVersion": API_VERSION
+        }
+        response = self._query(params)
+        return response
 
     def verify(self, data):
         """
