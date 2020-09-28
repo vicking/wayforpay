@@ -4,7 +4,6 @@ from .constants import API_URL
 from .utils import generate_signature
 
 
-# noinspection PyMethodMayBeStatic
 class Api:
     def __init__(self, merchant_account, merchant_key, merchant_domain):
         self.merchant_account = merchant_account
@@ -15,15 +14,14 @@ class Api:
         response = requests.post(url, json=params)
         return response.json()
 
-    def verify(self, data, return_url=""):
+    def verify(self, data):
         """
         Cart verification and receiving token(Verify)
+        Запрос Verify используется для проведения верификации карты клиента.
         :param data:
-        :param return_url:
         :return:
         """
-        # merchantAccount, merchantDomainName, orderReference, amount, currency
-        signature_data = f"{self.merchant_account};{self.merchant_domain};1;0;UAH"
+        signature_data = f"{self.merchant_account};{self.merchant_domain};{data['orderReference']};{data['amount']};{data['currency']}"
         params = {
             "transactionType": "VERIFY",
             "merchantAccount": self.merchant_account,
@@ -31,21 +29,30 @@ class Api:
             "merchantDomainName": self.merchant_domain,
             "merchantSignature": generate_signature(self.merchant_key, signature_data),
             "apiVersion": 1,
-            "orderReference": data["order_id"],
-            "amount": "0",
-            "currency": "UAH",
-            "card": data["number"],
-            "expMonth": data["date"].strip().split("/")[0],
-            "expYear": "20" + "/".join((data["date"]).split("/")[1:]).strip(),
-            "cardCvv": data["cvv"],
-            "cardHolder": data["cardholder"],
-            "clientFirstName": data["cardholder"].strip().split(" ")[0],
-            "clientLastName": " ".join((data["cardholder"] + " ").split(" ")[1:]).strip(),
-            "clientCountry": "UA",
-            "clientEmail": data["email"],
-            "clientPhone": data["phone"],
+            "orderReference": data["orderReference"],
+            "amount": data["amount"],
+            "currency": data["currency"],
+            "card": data["card"],
+            "expMonth": data["expMonth"],
+            "expYear": data["expYear"],
+            "cardCvv": data["cardCvv"],
+            "cardHolder": data["cardHolder"]
         }
-        if return_url:
-            params["return_url"] = return_url
+        if 'serviceUrl' in data.keys():
+            params["serviceUrl"] = data['serviceUrl']
+        if 'clientCountry' in data.keys():
+            params["clientCountry"] = data["clientCountry"]
+        if 'clientEmail' in data.keys():
+            params["clientEmail"] = data["clientEmail"]
+        if 'clientPhone' in data.keys():
+            params["clientPhone"] = data["clientPhone"]
+        if 'clientAddress' in data.keys():
+            params["clientAddress"] = data["clientAddress"]
+        if 'clientCity' in data.keys():
+            params["clientCity"] = data["clientCity"]
+        if 'clientState' in data.keys():
+            params["clientState"] = data["clientState"]
+        if 'clientZipCode' in data.keys():
+            params["clientZipCode"] = data["clientZipCode"]
         response = self._query(params)
         return response
