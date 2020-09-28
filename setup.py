@@ -5,12 +5,12 @@ with open("README.md", "r") as fh:
 setuptools.setup(
     name="wayforpay",
     version="1.0.1",
-    author="Serhii Zahranychnyi",
-    author_email="serhii.z@edicasoft.com",
+    author="Yevhen",
+    author_email="_tyler_@rambler.ru",
     description="WayForPay API wrapper for Python",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/zagran/wayforpay",
+    url="https://github.com/vicking/wayforpay",
     packages=setuptools.find_packages(),
     install_requires=["requests==2.22.0", ],
     classifiers=[
