@@ -1,6 +1,6 @@
 import requests
 
-from .constants import API_URL, API_VERSION
+from .constants import API_URL, API_VERSION, PURCHASE_URL
 from .utils import generate_signature
 
 
@@ -72,45 +72,91 @@ class Api:
         response = self._query(params)
         return response
 
-    def verify(self, data):
+    def purchase(self, data):
         """
-        Cart verification and receiving token(Verify)
-        Запрос Verify используется для проведения верификации карты клиента.
+        Запрос Purchase используется для проведения платежа клиентом на защищенной странице WayForPay.
         :param data:
         :return:
         """
-        signature_data = f"{self.merchant_account};{self.merchant_domain};{data['orderReference']};{data['amount']};{data['currency']}"
+        all_keys = ['merchantAccount', 'merchantAuthType', 'merchantDomainName', 'merchantTransactionType',
+                    'merchantTransactionSecureType', 'merchantSignature', 'apiVersion', 'language', 'returnUrl',
+                    'serviceUrl', 'orderReference', 'orderDate', 'orderNo', 'amount', 'currency', 'alternativeAmount',
+                    'alternativeCurrency', 'holdTimeout', 'orderTimeout', 'orderLifetime', 'recToken', 'productName',
+                    'productPrice', 'productCount', 'clientAccountId', 'socialUri', 'deliveryList', 'clientFirstName',
+                    'clientLastName', 'clientAddress', 'clientCity', 'clientState', 'clientZipCode', 'clientCountry',
+                    'clientEmail', 'clientPhone', 'deliveryFirstName', 'deliveryLastName', 'deliveryAddress',
+                    'deliveryCity', 'deliveryState', 'deliveryZipCode', 'deliveryCountry', 'deliveryEmail',
+                    'deliveryPhone', 'aviaDepartureDate', 'aviaLocationNumber', 'aviaLocationCodes', 'aviaFirstName',
+                    'aviaLastName', 'aviaReservationCode', 'regularMode', 'regularAmount', 'dateNext', 'dateEnd',
+                    'regularCount', 'regularOn', 'paymentSystems', 'defaultPaymentSystem']
+        signature_data = f"{self.merchant_account};{self.merchant_domain};{data['orderReference']};{data['orderDate']};{data['amount']};{data['currency']};{';'.join(data['productName'])};{';'.join([str(i) for i in data['productCount']])};{';'.join([str(i) for i in data['productPrice']])}"
         params = {
-            "transactionType": "VERIFY",
             "merchantAccount": self.merchant_account,
-            "merchantAuthType": "SimpleSignature",
             "merchantDomainName": self.merchant_domain,
+            "merchantTransactionSecureType": "AUTO",
             "merchantSignature": generate_signature(self.merchant_key, signature_data),
-            "apiVersion": 1,
-            "orderReference": data["orderReference"],
-            "amount": data["amount"],
-            "currency": data["currency"],
-            "card": data["card"],
-            "expMonth": data["expMonth"],
-            "expYear": data["expYear"],
-            "cardCvv": data["cardCvv"],
-            "cardHolder": data["cardHolder"]
+            "apiVersion": API_VERSION,
+            "orderReference": data['orderReference'],
+            "orderDate": data['orderDate'],
+            "amount": data['amount'],
+            "currency": data['currency'],
+            "productName": data['productName'],
+            "productPrice": data['productPrice'],
+            "productCount": data['productCount']
         }
-        if 'serviceUrl' in data.keys():
-            params["serviceUrl"] = data['serviceUrl']
-        if 'clientCountry' in data.keys():
-            params["clientCountry"] = data["clientCountry"]
-        if 'clientEmail' in data.keys():
-            params["clientEmail"] = data["clientEmail"]
-        if 'clientPhone' in data.keys():
-            params["clientPhone"] = data["clientPhone"]
-        if 'clientAddress' in data.keys():
-            params["clientAddress"] = data["clientAddress"]
-        if 'clientCity' in data.keys():
-            params["clientCity"] = data["clientCity"]
-        if 'clientState' in data.keys():
-            params["clientState"] = data["clientState"]
-        if 'clientZipCode' in data.keys():
-            params["clientZipCode"] = data["clientZipCode"]
+        for key in all_keys:
+            if key in data.keys() and key not in params.keys():
+                params[key] = data[key]
+        response = self._query(params, url=PURCHASE_URL)
+        return response
+
+    def verify(self, data, page=False):
+        """
+        Запрос Verify используется для вызова страницы wayforpay и проведения  верификации карты клиента.
+        Запрос Verify используется для проведения верификации карты клиента.
+        :param data:
+        :param page: True - Верификация на платежной странице
+                    False - Верификация карты/получение токена
+        :return:
+        """
+        signature_data = f"{self.merchant_account};{self.merchant_domain};{data['orderReference']};{data['amount']};{data['currency']}"
+        if page:
+            all_keys = ['merchantAccount', 'merchantAuthType', 'merchantDomainName', 'merchantSignature', 'apiVersion',
+                        'returnUrl', 'serviceUrl', 'orderReference', 'amount', 'currency', 'clientEmail', 'clientPhone',
+                        'clientCountry', 'clientAddress', 'clientCity', 'clientState', 'clientZipCode']
+            params = {
+                "merchantAccount": self.merchant_account,
+                "merchantAuthType": "SimpleSignature",
+                "merchantDomainName": self.merchant_domain,
+                "merchantSignature": generate_signature(self.merchant_key, signature_data),
+                "apiVersion": API_VERSION,
+                "orderReference": data["orderReference"],
+                "amount": data["amount"],
+                "currency": data["currency"]
+            }
+        else:
+            all_keys = ['transactionType', 'merchantAccount', 'merchantAuthType', 'merchantDomainName',
+                        'merchantSignature', 'apiVersion', 'serviceUrl', 'orderReference', 'amount', 'currency', 'card',
+                        'expMonth', 'expYear', 'cardCvv', 'cardHolder', 'clientEmail', 'clientPhone', 'clientCountry',
+                        'clientAddress', 'clientCity', 'clientState', 'clientZipCode']
+            params = {
+                "transactionType": "VERIFY",
+                "merchantAccount": self.merchant_account,
+                "merchantAuthType": "SimpleSignature",
+                "merchantDomainName": self.merchant_domain,
+                "merchantSignature": generate_signature(self.merchant_key, signature_data),
+                "apiVersion": API_VERSION,
+                "orderReference": data["orderReference"],
+                "amount": data["amount"],
+                "currency": data["currency"],
+                "card": data["card"],
+                "expMonth": data["expMonth"],
+                "expYear": data["expYear"],
+                "cardCvv": data["cardCvv"],
+                "cardHolder": data["cardHolder"]
+            }
+        for key in all_keys:
+            if key in data.keys() and key not in params.keys():
+                params[key] = data[key]
         response = self._query(params)
         return response
