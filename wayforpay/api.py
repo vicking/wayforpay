@@ -273,3 +273,29 @@ class Api:
             params['currency'] = data['currency']
         response = self._query(params)
         return response
+
+    def create_qr(self, data):
+        """
+        Данный метод дает возможность генерации QR кодов для оплаты с помощью мобильного приложения wayforpay.qr
+        Результатом запроса будет получение ссылки на изображение QR кода.
+        :param data:
+        :return:
+        """
+        all_keys = ['transactionType', 'merchantAccount', 'merchantAuthType', 'merchantDomainName', 'merchantSignature',
+                    'apiVersion', 'serviceUrl', 'orderReference', 'orderDate', 'amount', 'currency',
+                    'alternativeAmount', 'alternativeCurrency', 'orderTimeout', 'productName', 'productPrice',
+                    'productCount', 'clientFirstName', 'clientLastName', 'clientEmail', 'clientPhone',
+                    'clientFirstName', 'clientLastName', 'clientEmail', 'clientPhone']
+        signature_data = f"{self.merchant_account};{self.merchant_domain};{data['orderReference']};{data['orderDate']};{data['amount']};{data['currency']};{';'.join(data['productName'])};{';'.join([str(i) for i in data['productCount']])};{';'.join([str(i) for i in data['productPrice']])}"
+        params = {
+            "transactionType": "CREATE_QR",
+            "merchantAccount": self.merchant_account,
+            "apiVersion": API_VERSION,
+            "merchantSignature": generate_signature(self.merchant_key, signature_data),
+            "merchantDomainName": self.merchant_domain
+        }
+        for key in all_keys:
+            if key in data.keys() and key not in params.keys():
+                params[key] = data[key]
+        response = self._query(params)
+        return response
