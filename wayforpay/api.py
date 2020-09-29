@@ -160,3 +160,30 @@ class Api:
                 params[key] = data[key]
         response = self._query(params)
         return response
+
+    def get_client(self, data):
+        """
+        Получение данных по клиенту
+        :param data:  Внимание! Должен быть обязательно передан один из параметров card или recToken.
+        :return:
+        """
+        if 'card' in data.keys():
+            signature_data = f"{self.merchant_account};{data['card']}"
+            params = {
+                "apiVersion": API_VERSION,
+                "transactionType": "GET_CLIENT",
+                "merchantAccount": self.merchant_account,
+                "merchantSignature": generate_signature(self.merchant_key, signature_data),
+                "card": data['card']
+            }
+        else:
+            signature_data = f"{self.merchant_account};{data['recToken']}"
+            params = {
+                "apiVersion": API_VERSION,
+                "transactionType": "GET_CLIENT",
+                "merchantAccount": self.merchant_account,
+                "merchantSignature": generate_signature(self.merchant_key, signature_data),
+                "recToken": data['recToken']
+            }
+        response = self._query(params)
+        return response
