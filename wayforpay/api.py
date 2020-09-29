@@ -205,3 +205,22 @@ class Api:
         }
         response = self._query(params)
         return response
+
+    def currency_rates(self, data):
+        """
+        Запрос CURRENCY_RATES используется для получения курсов валют в системе wayforpay.
+        :param data:
+        :return:
+        """
+        signature_data = f"{self.merchant_account};{data['orderDate']}"
+        params = {
+            "transactionType": "CURRENCY_RATES",
+            "merchantAccount": self.merchant_account,
+            "merchantSignature": generate_signature(self.merchant_key, signature_data),
+            "apiVersion": API_VERSION,
+            "orderDate": data['orderDate']
+        }
+        if 'currency' in data.keys():
+            params['currency'] = data['currency']
+        response = self._query(params)
+        return response
