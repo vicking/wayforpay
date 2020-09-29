@@ -187,3 +187,21 @@ class Api:
             }
         response = self._query(params)
         return response
+
+    def transaction_list(self, data):
+        """
+        Запрос используется для получения списка транзакций по магазину за определенный период времени.
+        :param data:
+        :return:
+        """
+        signature_data = f"{self.merchant_account};{data['dateBegin']};{data['dateEnd']}"
+        params = {
+            "transactionType": "TRANSACTION_LIST",
+            "merchantAccount": self.merchant_account,
+            "merchantSignature": generate_signature(self.merchant_key, signature_data),
+            "apiVersion": API_VERSION,
+            "dateBegin": data['dateBegin'],
+            "dateEnd": data['dateEnd']
+        }
+        response = self._query(params)
+        return response
