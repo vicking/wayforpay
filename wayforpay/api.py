@@ -110,6 +110,55 @@ class Api:
         response = self._query(params, url=PURCHASE_URL)
         return response
 
+    def create_invoice(self, data):
+        """
+        Создание счетов
+        :param data:
+        :return:
+        """
+        all_keys = ['transactionType', 'merchantAccount', 'merchantTransactionType', 'merchantAuthType',
+                    'merchantDomainName', 'merchantSignature', 'apiVersion', 'language', 'notifyMethod', 'serviceUrl',
+                    'orderReference', 'orderDate', 'amount', 'currency', 'alternativeAmount', 'alternativeCurrency',
+                    'orderTimeout', 'holdTimeout', 'productName', 'productPrice', 'productCount', 'paymentSystems',
+                    'clientFirstName', 'clientLastName', 'clientEmail', 'clientPhone']
+        signature_data = f"{self.merchant_account};{self.merchant_domain};{data['orderReference']};{data['orderDate']};{data['amount']};{data['currency']};{';'.join(data['productName'])};{';'.join([str(i) for i in data['productCount']])};{';'.join([str(i) for i in data['productPrice']])}"
+        params = {
+            "transactionType": "CREATE_INVOICE",
+            "merchantAccount": self.merchant_account,
+            "apiVersion": API_VERSION,
+            "merchantSignature": generate_signature(self.merchant_key, signature_data),
+            "merchantDomainName": self.merchant_domain,
+            "productName": data['productName'],
+            "productPrice": data['productPrice'],
+            "productCount": data['productCount'],
+            "orderReference": data['orderReference'],
+            "orderDate": data['orderDate'],
+            "amount": data['amount'],
+            "currency": data['currency']
+        }
+        for key in all_keys:
+            if key in data.keys() and key not in params.keys():
+                params[key] = data[key]
+        response = self._query(params)
+        return response
+
+    def remove_invoice(self, data):
+        """
+        Данный метод API позволяет удалять выставленные неоплаченные счета.
+        :param data:
+        :return:
+        """
+        signature_data = f"{self.merchant_account};{data['orderReference']}"
+        params = {
+            "transactionType": "REMOVE_INVOICE",
+            "merchantAccount": self.merchant_account,
+            "merchantSignature": generate_signature(self.merchant_key, signature_data),
+            "apiVersion": API_VERSION,
+            "orderReference": data["orderReference"]
+        }
+        response = self._query(params)
+        return response
+
     def verify(self, data, page=False):
         """
         Запрос Verify используется для вызова страницы wayforpay и проведения  верификации карты клиента.
