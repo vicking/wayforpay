@@ -110,17 +110,53 @@ class Api:
         response = self._query(params, url=PURCHASE_URL)
         return response
 
+    def charge(self, data):
+        """
+        Принять платеж с вводом реквизитов на странице магазина
+        Примечание: поля (card+expMonth+expYear+cardCvv+cardHolder) или recToken должно быть обязательным.
+        :param data:
+        :return:
+        """
+        if not (('recToken' in data.keys) or (
+                'card' in data.keys and 'expMonth' in data.keys and 'expYear' in data.keys and 'cardCvv' in data.keys and 'cardHolder' in data.keys)):
+            return None
+        all_keys = ['transactionType', 'merchantAccount', 'merchantTransactionType', 'merchantDomainName',
+                    'merchantSignature', 'apiVersion', 'language', 'notifyMethod', 'serviceUrl', 'orderReference',
+                    'orderDate', 'amount', 'currency', 'alternativeAmount', 'alternativeCurrency', 'orderTimeout',
+                    'holdTimeout', 'productName', 'productPrice', 'productCount', 'paymentSystems', 'clientFirstName',
+                    'clientLastName', 'clientEmail', 'clientPhone']
+        signature_data = f"{self.merchant_account};{self.merchant_domain};{data['orderReference']};{data['orderDate']};{data['amount']};{data['currency']};{';'.join(data['productName'])};{';'.join([str(i) for i in data['productCount']])};{';'.join([str(i) for i in data['productPrice']])}"
+        params = {
+            "transactionType": "CHARGE",
+            "merchantAccount": self.merchant_account,
+            "apiVersion": API_VERSION,
+            "merchantSignature": generate_signature(self.merchant_key, signature_data),
+            "merchantDomainName": self.merchant_domain,
+            "productName": data['productName'],
+            "productPrice": data['productPrice'],
+            "productCount": data['productCount'],
+            "orderReference": data['orderReference'],
+            "orderDate": data['orderDate'],
+            "amount": data['amount'],
+            "currency": data['currency']
+        }
+        for key in all_keys:
+            if key in data.keys() and key not in params.keys():
+                params[key] = data[key]
+        response = self._query(params)
+        return response
+
     def create_invoice(self, data):
         """
         Создание счетов
         :param data:
         :return:
         """
-        all_keys = ['transactionType', 'merchantAccount', 'merchantTransactionType', 'merchantAuthType',
-                    'merchantDomainName', 'merchantSignature', 'apiVersion', 'language', 'notifyMethod', 'serviceUrl',
-                    'orderReference', 'orderDate', 'amount', 'currency', 'alternativeAmount', 'alternativeCurrency',
-                    'orderTimeout', 'holdTimeout', 'productName', 'productPrice', 'productCount', 'paymentSystems',
-                    'clientFirstName', 'clientLastName', 'clientEmail', 'clientPhone']
+        all_keys = ['transactionType', 'merchantAccount', 'merchantTransactionType', 'merchantDomainName',
+                    'merchantSignature', 'apiVersion', 'language', 'notifyMethod', 'serviceUrl', 'orderReference',
+                    'orderDate', 'amount', 'currency', 'alternativeAmount', 'alternativeCurrency', 'orderTimeout',
+                    'holdTimeout', 'productName', 'productPrice', 'productCount', 'paymentSystems', 'clientFirstName',
+                    'clientLastName', 'clientEmail', 'clientPhone']
         signature_data = f"{self.merchant_account};{self.merchant_domain};{data['orderReference']};{data['orderDate']};{data['amount']};{data['currency']};{';'.join(data['productName'])};{';'.join([str(i) for i in data['productCount']])};{';'.join([str(i) for i in data['productPrice']])}"
         params = {
             "transactionType": "CREATE_INVOICE",
