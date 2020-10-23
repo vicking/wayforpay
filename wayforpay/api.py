@@ -335,3 +335,37 @@ class Api:
                 params[key] = data[key]
         response = self._query(params)
         return response
+
+    def p2p_transfer(self, data):
+        """
+        Данное API позволяет производить переводы между картами физических лиц, выпущенных украинскими банками.
+        Примечание: поля (card+expMonth+expYear+cardCvv+cardHolder) или recToken должно быть обязательным.
+        :param data:
+        :return:
+        """
+        if not (('recToken' in data.keys) or (
+                'card' in data.keys and 'expMonth' in data.keys and 'expYear' in data.keys and 'cardCvv' in data.keys and 'cardHolder' in data.keys)):
+            return None
+        all_keys = ['transactionType', 'merchantAccount', 'merchantDomainName', 'orderReference', 'orderDate', 'amount',
+                    'fee', 'currency', 'card', 'expMonth', 'expYear', 'cardCvv', 'cardHolder', 'recToken',
+                    'clientFirstName', 'clientLastName', 'clientAddress', 'clientCity', 'clientState', 'clientZipCode',
+                    'clientCountry', 'clientEmail', 'clientPhone', 'clientIpAddress', 'cardBeneficiary', 'apiVersion',
+                    'deliveryFirstName', 'deliveryLastName', 'deliveryEmail', 'deliveryPhone', 'merchantSignature']
+        signature_data = f"{self.merchant_account};{data['orderReference']};{data['amount']};{data['currency']};{data['cardBeneficiary']}"
+        params = {
+            "transactionType": "P2P_TRANSFER",
+            "merchantAccount": self.merchant_account,
+            "merchantAuthType": "SimpleSignature",
+            "apiVersion": API_VERSION,
+            "merchantSignature": generate_signature(self.merchant_key, signature_data),
+            "merchantDomainName": self.merchant_domain,
+            "orderReference": data['orderReference'],
+            "orderDate": data['orderDate'],
+            "amount": data['amount'],
+            "currency": data['currency']
+        }
+        for key in all_keys:
+            if key in data.keys() and key not in params.keys():
+                params[key] = data[key]
+        response = self._query(params)
+        return response
