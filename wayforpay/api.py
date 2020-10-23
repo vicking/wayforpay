@@ -369,3 +369,30 @@ class Api:
                 params[key] = data[key]
         response = self._query(params)
         return response
+
+    def p2p_credit(self, data):
+        """
+        Данное API позволяет производить пополнения карт физических лиц с банковского счета ТСП.
+        Пополнение возможно любых карт, выпущенных Украинскими Банками.
+        :param data:
+        :return:
+        """
+        all_keys = ['transactionType', 'merchantAccount', 'orderReference', 'amount', 'currency', 'cardBeneficiary',
+                    'rec2Token', 'merchantSignature', 'apiVersion', 'serviceUrl', 'recipientFirstName',
+                    'recipientLastName', 'recipientPhone', 'recipientEmail']
+        signature_data = f"{self.merchant_account};{data['orderReference']};{data['amount']};{data['currency']};{data['cardBeneficiary']};{data['rec2Token']}"
+        params = {
+            "transactionType": "P2P_CREDIT",
+            "merchantAccount": self.merchant_account,
+            "merchantAuthType": "SimpleSignature",
+            "apiVersion": API_VERSION,
+            "merchantSignature": generate_signature(self.merchant_key, signature_data),
+            "orderReference": data['orderReference'],
+            "amount": data['amount'],
+            "currency": data['currency']
+        }
+        for key in all_keys:
+            if key in data.keys() and key not in params.keys():
+                params[key] = data[key]
+        response = self._query(params)
+        return response
